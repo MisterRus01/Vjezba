@@ -51,8 +51,7 @@ X = data_df.drop(columns=['diabetes']).to_numpy()
 y = data_df['diabetes'].copy().to_numpy()
 
 # train test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=5)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=5)
 
 # a)
 logReg_model = LogisticRegression(max_iter=300)
