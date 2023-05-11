@@ -1,18 +1,29 @@
-import pandas as pd
 import numpy as np
-from sklearn.metrics import accuracy_score
-from sklearn . model_selection import train_test_split
-from sklearn . preprocessing import MinMaxScaler, OneHotEncoder
-from sklearn . neighbors import KNeighborsClassifier
-from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
+import pandas as pd
+
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.neighbors import KNeighborsClassifier
+from matplotlib.colors import ListedColormap
+from sklearn import svm
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
-from sklearn.pipeline import make_pipeline
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import GridSearchCV
-from sklearn import *
+
+
+
+data = pd.read_csv("titanic.csv")
+
+
+# Izbacivanje null i missing vrijednosti
+
+data.dropna(inplace=True)
+
+
+
+# Kreiranje funkcije plot_decision_regions
 
 def plot_decision_regions(X, y, classifier, resolution=0.02):
     plt.figure()
@@ -41,59 +52,91 @@ def plot_decision_regions(X, y, classifier, resolution=0.02):
                     marker=markers[idx],
                     label=cl)
 
-#data = np.loadtxt("titanic.csv", skiprows=1, delimiter=",")
-data_df = pd.read_csv("titanic.csv")
-print(data_df)
-print(len(data_df))
-data_df = data_df.dropna()
-print(data_df)
-data_df.drop_duplicates()
-data_df=data_df.reset_index(drop=True)
-data_df.loc[data_df.Sex=="male", "Sex"]=0
-data_df.loc[data_df.Sex=="female", "Sex"]=1
-data_df.loc[data_df.Embarked=="S", "Embarked"]=0
-data_df.loc[data_df.Embarked=="C", "Embarked"]=1
-data_df.loc[data_df.Embarked=="Q", "Embarked"]=2
-print(len(data_df))
 
-X = data_df.drop(columns=["PassengerId", "Survived", "Name", "Age", "SibSp", "Parch", "Ticket", "Cabin"]).to_numpy()
-y=data_df["Survived"].copy().to_numpy()
-X = np.asarray(X).astype(np.float32)
+# ucitaj podatke
+data = pd.read_csv("titanic.csv")
+print(data.info())
 
-X_train , X_test , y_train , y_test = train_test_split (X , y , test_size = 0.4 , random_state = 1 )
+data.hist()
+plt.show()
 
-sc = MinMaxScaler()
-X_train_n=sc.fit_transform(X_train)
-X_test_n=sc.transform(X_test)
+# dataframe u numpy
+X = data[["Pclass", "Sex", "Fare", "Embarked"]].to_numpy()
+y = data["Survived"].to_numpy()
 
-#A)
-KNN_model = KNeighborsClassifier(n_neighbors=5)
-KNN_model.fit(X_train_n, y_train)
-y_test_p_KNN = KNN_model.predict(X_test_n)
-y_train_p_KNN = KNN_model.predict(X_train_n)
+# podijeli podatke u omjeru 60-40%
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.4, stratify=y, random_state = 10)
+
+# skaliraj ulazne velicine  - osigurava da svi podaci budu na istoj skali
+sc = StandardScaler()
+X_train_n = sc.fit_transform(X_train)
+X_test_n = sc.transform((X_test))
+
+# Model logisticke regresije
+LogReg_model = LogisticRegression(penalty=None) 
+LogReg_model.fit(X_train_n, y_train)            # treniranje modela s podacima za trening
+
+# Evaluacija modela logisticke regresije
+y_train_p = LogReg_model.predict(X_train_n)
+y_test_p = LogReg_model.predict(X_test_n)
+
+print("Logisticka regresija: ")
+print("Tocnost train: " + "{:0.3f}".format((accuracy_score(y_train, y_train_p))))           # izračunavanje točnosti train skupa
+print("Tocnost test: " + "{:0.3f}".format((accuracy_score(y_test, y_test_p))))              # izračunavanje točnosti test skupa
+
+# granica odluke pomocu logisticke regresije
+plot_decision_regions(X_train_n, y_train, classifier=LogReg_model)          # prikazivanje granica odluke modela
+plt.xlabel('x_1')
+plt.ylabel('x_2')
+plt.legend(loc='upper left')
+plt.title("Tocnost: " + "{:0.3f}".format((accuracy_score(y_train, y_train_p))))
+plt.tight_layout()
+plt.show()
+
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Izradite algoritam KNN na skupu podataka za učenje (uz K=5). Vizualizirajte podatkovneprimjere i granicu odluke.
+# Izračunajte točnost klasifikacije na skupu podataka za učenje i skupu podataka za testiranje.
+
+# KNN model
+KNN_model = KNeighborsClassifier(n_neighbors = 5)
+KNN_model.fit(X_train, y_train)
+
+# Evaluacija KNN modela
+y_train_p = KNN_model.predict(X_train_n)
+y_test_p = KNN_model.predict(X_test_n)
+
+print("KNN: ")
+print("Tocnost train: " + "{:0.3f}".format((accuracy_score(y_train, y_train_p))))
+print("Tocnost test: " + "{:0.3f}".format((accuracy_score(y_test, y_test_p))))
+
+# Granica odluke pomoću KNN
 plot_decision_regions(X_train_n, y_train, classifier=KNN_model)
 plt.xlabel('x_1')
 plt.ylabel('x_2')
 plt.legend(loc='upper left')
-plt.title("Tocnost, KNN : " +"{:0.3f}".format((accuracy_score(y_train, y_train_p_KNN))))
+plt.title("Točnost: " + "{:0.3f}".format((accuracy_score(y_train, y_train_p))))
 plt.tight_layout()
 plt.show()
 
-#B)
-print("Algoritam k najblizih susjeda: ")
-print("Tocnost train: " +"{:0.3f}".format((accuracy_score(y_train, y_train_p_KNN))))
-print("Tocnost test: " +"{:0.3f}".format((accuracy_score(y_test, y_test_p_KNN))))
 
-#C)
-k_range = list(range(1, 31))
-param_grid = dict(n_neighbors=k_range)
-knn_gscv = GridSearchCV(KNN_model, param_grid, cv=5, scoring='accuracy', n_jobs =-1)
+#-----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-knn_gscv.fit(X_train_n, y_train)
 
-print("best params for train: ", knn_gscv.best_params_ )
-print("best score for train: ", knn_gscv.best_score_ )
-knn_gscv.fit(X_test_n, y_test)
+# Pomoću unakrsne validacije odredite optimalnu vrijednost hiperparametra K algoritmaKNN.
 
-print("best params for test: ", knn_gscv.best_params_ )
-print("best score for test: ", knn_gscv.best_score_ ) 
+knn_model = KNeighborsClassifier()
+
+# GridSearch za pronalazak optimalnog parametra K
+param_grid = {'n_neighbors': range(1, 100)}
+
+grid = GridSearchCV(knn_model, param_grid, cv=5, scoring='accuracy')
+grid.fit(X_train_n, y_train)
+
+print("Najbolji K parametar: ", grid.best_params_['n_neighbors'])
+
+
+# 

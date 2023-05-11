@@ -74,3 +74,4 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm)
 disp.plot()
 plt.show()
 
+#Kreirana mreža svakim novim pokretanjem ima drugačije parametre pa je zato ova matrica uvijek drugačija.
